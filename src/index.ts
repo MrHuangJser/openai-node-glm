@@ -6,6 +6,7 @@ import * as Errors from './error';
 import { type Agent } from './_shims/index';
 import * as Uploads from './uploads';
 import * as API from 'openai/resources/index';
+import { sign } from './jwt';
 
 export interface ClientOptions {
   /**
@@ -118,7 +119,7 @@ export class OpenAI extends Core.APIClient {
       apiKey,
       organization,
       ...opts,
-      baseURL: baseURL || `https://api.openai.com/v1`,
+      baseURL: baseURL || `https://open.bigmodel.cn/api/paas/v4`,
     };
 
     if (!options.dangerouslyAllowBrowser && Core.isRunningInBrowser()) {
@@ -164,7 +165,9 @@ export class OpenAI extends Core.APIClient {
   }
 
   protected override authHeaders(opts: Core.FinalRequestOptions): Core.Headers {
-    return { Authorization: `Bearer ${this.apiKey}` };
+    const [id, secret] = this.apiKey.split('.') as [string, string];
+    const key = sign({ api_key: id, exp: Date.now() + 1000 * 60 * 60, timestamp: Date.now() }, secret);
+    return { Authorization: `Bearer ${key}` };
   }
 
   static OpenAI = this;
